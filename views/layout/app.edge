@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title ? title : '' }}</title>
+  <!-- Favicons -->
+  <link href="/img/favicon.png" rel="icon">
+  <link href="/img/apple-touch-icon.png" rel="apple-touch-icon">
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css?family=https://fonts.googleapis.com/css?family=Inconsolata:400,500,600,700|Raleway:400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+  <!-- Vendor CSS Files -->
+  <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Template Main CSS File -->
+  <link href="/css/style.css" rel="stylesheet">
+
+  <link href="/fontawesome/css/all.css" rel="stylesheet">
+  <link href="/fontawesome/css/all.min.css" rel="stylesheet">
+
+
+
+  @!section("styles")
+</head>
+
+<body>
+  @include("partials.navbar")
+  @section("body")
+  @include("partials.footer")
+
+
+  @endsection
+  <script src="/vendor/jquery/jquery-3.2.1.min.js"></script>
+  <script src="/vendor/jquery/jquery-ui.min.js"></script>
+  <!-- Vendor JS Files -->
+  <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- Template Main JS File -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+  @!section("scripts")
+</body>
+</html>
