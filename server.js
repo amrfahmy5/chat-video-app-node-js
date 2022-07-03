@@ -17,8 +17,9 @@ const webRoutes = require("./routes/web");
 
 const bodyParser = require("body-parser");
 
-
+const cookieParser = require('cookie-parser')
 const sess = require("express-session");
+
 config({ cache: process.env["NODE_ENV"] === "production" });
 
 
@@ -28,11 +29,14 @@ edgeService(require("edge.js")).init();
 edge.config({ cache: true });
 
 
+app.use(cookieParser());
 
 const sessionMd = sess({
   secret: process.env["secret"],
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 60000 }
+
 });
 
 // middlewares
@@ -48,7 +52,7 @@ app.use(
     extended: true,
   })
 );
-app.use(sessionMd);
+app.use(sessionMd);  
 
 app.use(static("public"));
 app.use(edge.engine);
@@ -70,7 +74,8 @@ const server = app.listen(process.env["port"], process.env["ip"], () =>
   console.log(`server connected at port ${process.env["port"]} - ip ${process.env["ip"]}`)
 );
 
-socketIO.initialize(server)
+//session for use in ios
+socketIO.initialize(server,sessionMd)
 
 process.on("uncaughtException", (err) => {
   console.error(err.stack);

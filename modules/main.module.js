@@ -1,15 +1,11 @@
 const { database } = require("../services/db");
 
 module.exports = {
-  async queryBuilder() {
-    // return await database
-    //   .table("khaledProjects")
-    //   .leftJoin("khaledimage", async function () {
-    //     this.on("khaledimage.project_id","=","khaledProjects.id");
-    //     this.onVal(
-    //       "khaledimage.image_id","=",database.table("khaledimage").min("khaledimage.image_id")
-    //     );
-    //   })
-    //   .select("*");
+  async checkLogin(username , password) {
+    return await database.table("users").where("name","=",username)
+    .andWhere("password","=",password).select("*") ;
+  },
+  async getUser(user_id) {
+    return await database.table("users").where("id","=",user_id).first() ;
   },
 };

@@ -1,15 +1,19 @@
 const { Server } = require("socket.io");
+var ios = require('socket.io-express-session');
 
+const mainModule = require("../modules/main.module")
 let users = [];
 
 module.exports = {
   users,
-  async initialize(server) {
+  async initialize(server,session) {
     const io = new Server();
+    io.use(ios(session));
     io.listen(server);
-
     io.on("connection", (socket) => {
-      socket.on("disconnect", function (data) {
+
+      var sess = socket.handshake.session;
+      socket.on("disconnect", async function (data) {
         let index = -1;
         users.find((o, i) => {
           if (o.id === socket.id) {
@@ -17,32 +21,34 @@ module.exports = {
             return true; // stop searching
           }
         });
-        if (index > -1) {
+        if (index > -1) 
           users.splice(index, 1); // 2nd parameter means remove one item only
-        }
+        
         socket.broadcast.emit("remove_user", {
-          name: socket.name,
+          name: users[index].name,
+          user_id: users[index].user_id,
           id: socket.id,
         });
       });
 
-      socket.on("set_name", function (data) {
-        users.push({ name: data.name, id: socket.id, img: data.img });
-        socket.name = data.name;
-        socket.img = data.img;
+      socket.on("login", async function (data) {
+        let user_id = sess.user_id  ;
+        let {name  , img_src} = await mainModule.getUser(user_id) ;
+        users.push({  id:socket.id , user_id , name , img:img_src });
         socket.broadcast.emit("new_user", {
-          name: socket.name,
+          name ,
           id: socket.id,
-          img: data.img,
+          user_id ,
+          img: img_src,
         });
-        socket.send(`welcome ${socket.name}`);
+        // socket.send(`welcome ${socket.name}`);
       });
 
       socket.on("typing", function (data) {
-        socket.broadcast.emit("typing", { name: data.name, id: data.id });
+        socket.broadcast.emit("typing", { id: data.id });
       });
       socket.on("stopTyping", function (data) {
-        socket.broadcast.emit("stopTyping", { name: data.name, id: data.id });
+        socket.broadcast.emit("stopTyping", { id: data.id });
       });
 
       socket.on("new_message", function (data) {
@@ -62,14 +68,7 @@ module.exports = {
         
       });
 
-      socket.on("message", function (message) {
-        message = JSON.parse(message);
-        if (message.type == "userMessage") {
-          socket.broadcast.send(JSON.stringify(message));
-          message.type = "myMessage";
-          socket.send(JSON.stringify(message));
-        }
-      });
+
     });
   },
 };
