@@ -49,7 +49,9 @@
                 {{--  users  --}}
                 <div class="card-body contacts_body">
                     <ui class="contacts" id="users">
-                        <li class="active" id="public" onclick="showChat('public','Public Group','/img/group.png')">
+
+                        {{--  public chat  --}}
+                        <li class="active" id="user-0" onclick="showChat('0','Public Group','/img/group.png')">
                             <div class="d-flex bd-highlight">
                                 <div class="img_cont">
                                     <img src="/img/group.png" class="rounded-circle user_img">
@@ -61,16 +63,17 @@
                                 </div>
                             </div>
                         </li>
-                        @each(user in onlineUsers)
-                        <li id="{{user.id}}" onclick="showChat('{{user.id}}','{{user.name}}','{{user.img}}')">
+                        {{--  private chat  --}}
+                        @each(user in allUsers)
+                        <li id="user-{{user.id}}" onclick="showChat('{{user.id}}','{{user.name}}','{{user.img_src}}')">
                             <div class="d-flex bd-highlight">
                                 <div class="img_cont">
-                                    <img src="{{user.img}}" class="rounded-circle user_img">
-                                    <span class="online_icon"></span>
+                                    <img src="{{user.img_src}}" class="rounded-circle user_img">
+                                    <span class="online_icon {{user.online? '':'offline'}}"></span>
                                 </div>
                                 <div class="user_info">
                                     <span class="user_name">{{user.name}}</span>
-                                    <p>Online</p>
+                                    <p class="user-status">{{user.online? 'online':'offline'}}</p>
                                 </div>
                             </div>
                         </li>
@@ -98,7 +101,7 @@
                         </div>
                         <div class="user_info">
                             <span id="user-name">Public Group</span>
-                            <p id="user-id">public</p>
+                            <p id="user-id">0</p>
                         </div>
                         <div class="video_cam">
                             <span><i class="fas fa-video"></i></span>
@@ -118,11 +121,12 @@
 
                 {{--  chat body  --}}
                 <div class="card-body msg_card_body" id="chat-body">
-
-                    <div  id="chat-messages-public">
+                    {{--  fir public chat  --}}
+                    <div  id="chat-messages-0">
 
                     </div>
-                    @each(user in onlineUsers)
+                    {{--  private chat  --}}
+                    @each(user in allUsers)
                     <div  id="chat-messages-{{user.id}}">
 
                     </div>

@@ -11,16 +11,11 @@
   <link href="/img/apple-touch-icon.png" rel="apple-touch-icon">
   <!-- Google Fonts -->
   <link
-    href="https://fonts.googleapis.com/css?family=https://fonts.googleapis.com/css?family=Inconsolata:400,500,600,700|Raleway:400,400i,500,500i,600,600i,700,700i"
+    {{--  href="https://fonts.googleapis.com/css?family=https://fonts.googleapis.com/css?family=Inconsolata:400,500,600,700|Raleway:400,400i,500,500i,600,600i,700,700i"  --}}
     rel="stylesheet">
-  <!-- Vendor CSS Files -->
-  <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Template Main CSS File -->
-  <link href="/css/style.css" rel="stylesheet">
 
-  <link href="/fontawesome/css/all.css" rel="stylesheet">
-  <link href="/fontawesome/css/all.min.css" rel="stylesheet">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
 
 
   @!section("styles")
@@ -31,12 +26,16 @@
 
 
   @endsection
+
+	{{--  <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>  --}}
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+
   <script src="/vendor/jquery/jquery-3.2.1.min.js"></script>
   <script src="/vendor/jquery/jquery-ui.min.js"></script>
   <!-- Vendor JS Files -->
   <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <!-- Template Main JS File -->
-  <script src="/js/main.js"></script>
   @!section("scripts")
 </body>
 </html>

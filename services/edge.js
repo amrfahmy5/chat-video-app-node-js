@@ -5,7 +5,12 @@ module.exports = (edge) => ({
     }
     return "";
   },
+  toTime: (time) => {
+      return `${new Date(time).getHours()}:${new Date(time).getMinutes()}`
+  },
   init() {
     edge.global("toShortDate", this.toShortDate);
+    edge.global("toTime", this.toTime);
+
   },
 });

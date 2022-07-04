@@ -1,12 +1,18 @@
 const routerProvider = require("express");
 const router = routerProvider.Router();
-const {index , loginIndex  , login} = require("../controllers/mainController") ;
 const { isLogin } = require("../middlewares/authMiddleware");
 const {webErrorPage} = require("../middlewares/productionErrorReporter");
 
-router.get("/",isLogin,index);
+
+
+const {index } = require("../controllers/mainController") ;
+const {loginSubmit  , loginIndex} = require("../controllers/signController") ;
+
 router.get("/login",loginIndex);
-router.post("/login",(login));
+router.post("/login",loginSubmit);
+
+router.get("/",isLogin,index);
+
 
 
 router.use(webErrorPage);
