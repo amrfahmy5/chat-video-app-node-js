@@ -12,5 +12,9 @@ module.exports = {
   },
   async setOffline(user_id){
     return await database.table("users").where("id",user_id).update({online:"0",lastOnlineDate:new Date()})
+  },
+  async makeAllUserOffline(){
+    return await database.table("users").whereNot("id","0").update({online:"0"})
+
   }
 };

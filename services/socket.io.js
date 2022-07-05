@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 var ios = require('socket.io-express-session');
 
-const mainModule = require("../modules/main.module")
+const mainModule = require("../modules/user.module")
 const messageModule = require("../modules/message.module")
 
 let users = [];
@@ -36,6 +36,7 @@ module.exports = {
       });
       socket.on("login", async function (data) {
         let { user_id, user_name, user_img } = sess;
+        if(!user_id) return ;
         mainModule.setOnline(user_id);
         users.push({ id: socket.id, user_id, user_name, img: user_img });
         socket.broadcast.emit("user-login", {
@@ -46,6 +47,7 @@ module.exports = {
         })
       });
       socket.on("typing", function (data) {
+        if(!sess.user_id) return ;
         let {receiver_id} = data ;
         const result = {
           sender_id : sess.user_id ,
@@ -62,6 +64,7 @@ module.exports = {
       });
       socket.on("stopTyping", function (data) {
         let {receiver_id} = data ;
+        if(!sess.user_id) return ;
         const result = {
           sender_id : sess.user_id ,
           IsPublic:(receiver_id=="0")?true:false
@@ -79,7 +82,7 @@ module.exports = {
       socket.on("send_message", function (data) {
         let receiver_id = data.receiver_id;
         let { user_id, user_name, user_img } = sess;
-
+        if(!user_id) return ;
         const result_date = {
           message_content: data.message_content,
           message_time: data.message_time,
@@ -101,6 +104,7 @@ module.exports = {
 
       });
       socket.on("readMessage", async function (data) {
+        if(!sess.user_id) return ;
         let {sender_id} = data ;
         messageModule.setReaded(sender_id,sess.user_id);
         users.find(o => {

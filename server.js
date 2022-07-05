@@ -25,6 +25,7 @@ config({ cache: process.env["NODE_ENV"] === "production" });
 
 const edge = require("express-edge");
 const edgeService = require("./services/edge");
+const userModule = require("./modules/user.module");
 edgeService(require("edge.js")).init();
 edge.config({ cache: true });
 
@@ -70,9 +71,10 @@ if (process.env.NODE_ENV === "development") {
 }
 
 
-const server = app.listen(process.env["port"], process.env["ip"], () =>
-  console.log(`server connected at port ${process.env["port"]} - ip ${process.env["ip"]}`)
-);
+const server = app.listen(process.env["port"], process.env["ip"], () =>{
+  // userModule.makeAllUserOffline();
+  console.log(`server connected at port ${process.env["port"]} - ip ${process.env["ip"]}`);
+});
 
 //session for use in ios
 socketIO.initialize(server,sessionMd)
