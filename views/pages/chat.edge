@@ -379,6 +379,37 @@
         margin-bottom: 2rem;
         box-shadow: none;
     }
+
+    /* videooooooooooooooooooooooooooooo */
+    #page-video {
+    width: 100%;
+    height: calc(100vh - 89px);
+    /* display: flex;
+    justify-content: space-between;
+    overflow: hidden; */
+  }
+  .video-chat-container {
+    padding: 0 20px;
+    flex: 1;
+    position: relative;
+  }
+
+  .remote-video {
+    border: 1px solid #cddfe7;
+    width: 100%;
+    height: 80vh;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .local-video {
+    position: absolute;
+    border: 1px solid #cddfe7;
+    bottom: 60px;
+    right: 40px;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    width: 50vh;
+  }
     </style>
     
 @endsection
@@ -401,7 +432,7 @@
     <!-- Page header end -->
 
     <!-- Content wrapper start -->
-    <div class="content-wrapper">
+    <div class="content-wrapper" id="page-chat">
 
         <!-- Row start -->
         <div class="row gutters">
@@ -445,8 +476,14 @@
 
                         <div id=chat-{{user.id}} class="chat-body d-none col-xl-8 col-lg-8 col-md-8 col-sm-9 col-9">
 
-                            <div style="max-height: 10vh" class="selected-user">
-                                <span>To: <span class="name">{{user.name}}</span></span>
+                            <div style="max-height: 10vh" class="selected-user row">
+                                <div>To: <span class="name">{{user.name}}</span></div>
+
+                                <div style="text-align: right;margin-left: auto;">
+                                    <button class="btn btn-primary" onclick="callUser('{{user.id}}')">
+                                        <i class="fa fa-video-camera" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="chat-container"  >
                                 <ul style="overflow-y:scroll;max-height: 50vh" class="chat-box chatContainerScroll" id="chat-box-{{user.id}}" >
@@ -473,6 +510,18 @@
     </div>
     <!-- Content wrapper end -->
 
+    <div class="content-container" style="display: none" id="page-video">
+        <div class="video-chat-container">
+          <div class="video-container">
+            <video autoplay class="remote-video" id="remote-video"></video>
+            <video autoplay muted class="local-video" id="local-video"></video>
+          </div>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-warning" onclick="stopCall()">End Call</button>
+        </div>
+      </div>
+
 </div>
 
 @endsection
@@ -480,6 +529,7 @@
 <script src="/js/notification.js"></script>
 <script src="/js/main.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/socketProcess2.js"></script>
+<script src="/js/socketProcess.js"></script>
+<script src="/js/video.js"></script>
   
 @endsection

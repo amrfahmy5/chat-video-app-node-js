@@ -72,7 +72,7 @@ if (process.env.NODE_ENV === "development") {
 
 
 const server = app.listen(process.env["port"], process.env["ip"], () =>{
-  // userModule.makeAllUserOffline();
+  userModule.makeAllUserOffline();
   console.log(`server connected at port ${process.env["port"]} - ip ${process.env["ip"]}`);
 });
 

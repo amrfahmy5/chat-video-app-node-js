@@ -1,130 +1,88 @@
-"use strict";
-const public_chat_id = 0 ;
-
 const socket = io();
-let name, img;
-function typing() {
-  socket.emit("typing");
-}
-function stoptyping() {
-  socket.emit("stopTyping", { id: socket.id, name });
-}
-function onEnter() {
-  if (event.key === "Enter") sendMessage();
-}
-function scrollEndChat() {
-  // var scrollDiv = document.getElementById("chat-messages");
-  // scrollDiv.scrollTop = scrollDiv.scrollHeight;
-}
-function addSenderMessageToView(messageContent, reciever_id) {
-  $(`#chat-messages-${reciever_id}`).append(`
-  <div class="d-flex justify-content-start mb-4">
-  <div class="img_cont_msg">
-  <img src="${img}"class="rounded-circle user_img_msg">
-  </div>
-  <div class="msg_cotainer">${messageContent}
-  <span class="msg_time">
-    ${new Date().getHours()}:
-    ${new Date().getMinutes()} , Today
-    </span></div></div>`);
-}
-function sendMessage() {
-  let messageContent = document.getElementById("message").value;
-  let receiver_id = document.getElementById("user-id").textContent;
-  $("#message").val("");
-  socket.emit("send_message", {
-    messageContent,
-    receiver_id,
-    time: new Date(),
-  });
-  addSenderMessageToView(messageContent, receiver_id);
-  scrollEndChat();
+let my_name = '', my_image = '', my_id = '', unreadMessage = false;
+socket.emit("login");
+
+function setMessageReaded(sender_id) {
+    if (unreadMessage)
+        socket.emit("readMessage", { sender_id })
 }
 
 
-function addReceiverMessageToView(senderData) {
-  console.log(senderData.sender_id);
-  $(`#chat-messages-${senderData.sender_id}`).append(`
-    <div class="d-flex justify-content-end mb-4" title="${senderData.sender_name}">
-    <div class="msg_cotainer_send">${senderData.message_content}
-    <span class="msg_time_send">${new Date(senderData.message_time).getHours()} : ${new Date(senderData.message_time).getMinutes()} , Today </span>
-    </div>
-    <div class="img_cont_msg">
-    <img src="${senderData.sender_img}"class="rounded-circle user_img_msg">
-    </div></div>`);
+function sendMessageOnEnter(e, receiver_id) {
+    if (e.key === "Enter") {
+        let message_content = e.target.value;
+        e.target.value = '';
+        socket.emit("send_message", {
+            message_content,
+            receiver_id,
+            message_time: new Date(),
+        });
+        let messageHtml = sendMessageHtml(my_name, my_image, message_content, new Date());
+        // console.log(messageHtml);
+        $(`#chat-box-${receiver_id}`).append(messageHtml);
+        scrollEndChat();
+
+    }
 }
 
 
-function leaveUserAlertMessage(name) {
-  $("#chat-messages-public").append(`
-    <div class="text-center" style="color: white;">
-    <strong> ${name} </strong> leaved our chat</div>`);
-}
-function newUserAlertMessage(name) {
-  $("#chat-messages-public").append(`
-    <div class="text-center" style="color: white;">
-    <strong> ${name} </strong> joined our chat </div>`);
-}
-function makeUserOnline(user_id) {
-  $(`#user-${user_id} .online_icon`).removeClass("offline");
-  $(`#user-${user_id} .user-status`).text("online");
-}
-function makeUserOffline(user_id) {
-  $(`#user-${user_id} .online_icon`).addClass("offline");
-  $(`#user-${user_id} .user-status`).text("offline");
-}
-function showChat(reciverID, reciverName, reciverImg) {
-  //change chat cart to user details
-  $("#user-name").text(reciverName);
-  $("#user-img").attr("src", reciverImg);
-  $("#user-id").text(reciverID);
-
-  //show chat cart body of user and display others
-  let chatsBody = document.getElementById("chat-body").children;
-  for (let i = 0; i < chatsBody.length; i++) {
-    if (chatsBody[i].id == "chat-messages-" + reciverID)
-      chatsBody[i].classList.remove("d-none");
-    else
-      chatsBody[i].classList.add("d-none");
-  }
-
-  //make user active
-  const activeChats = document.querySelectorAll(".active");
-  activeChats.forEach((ac) => {
-    ac.classList.remove("active");
-  });
-  $(`#user-${reciverID}`).attr("class", "active");
-}
-
-$(document).ready(function () {
-  socket.emit("login");
-
-  socket.on("new_user", async function (data) {
-    makeUserOnline(data.user_id);
-    newUserAlertMessage(data.user_name);
-  });
-  socket.on("remove_user", function (data) {
-    makeUserOffline(data.user_id)
-    if (data.user_name) leaveUserAlertMessage(data.user_name);
-  });
-
-  $("#send_message").click(sendMessage);
-
-
-  socket.on("receive_message", (data) => {
-    let current_chat_id = document.getElementById("user-id").textContent;
-    data.sender_id = data.receiver_id=="0"?"0":data.sender_id; //for public chat
-    if (data.sender_id != current_chat_id  ) showChat(data.sender_id, data.name, data.img);
-    addReceiverMessageToView(data);
+socket.on("receive_message", (data) => {
+    unreadMessage = true;
+    let { message_content, message_time, sender_id, sender_name, sender_img, IsPublic } = data
+    let messageHtml = receiveMessageHtml(sender_name, sender_img, message_content, message_time);
+    $(`#chat-box-${(IsPublic) ? "0" : sender_id}`).append(messageHtml);
+    showNotification(sender_name,sender_img,message_content)
     scrollEndChat();
 
-  });
-
-  socket.on("typing", function (data) {
-    $("#ty-" + data.user_id).text("Typing...");
-  });
-  socket.on("stopTyping", function (data) {
-    
-    $("#ty-" + data.user_id).text("Online");
-  });
 });
+function changeUserStatus(user_id, ISonline, lastOPenDate) {
+    let person = $(`.person#person-${user_id} .status`);
+    let personTime = $(`.person#person-${user_id} .time`);
+
+    if (ISonline) {
+        person.removeClass("offline");
+        person.addClass("online");
+        personTime.text("online");
+    } else {
+        person.addClass("offline");
+        person.removeClass("online");
+        personTime.text(lastOPenDate);
+    }
+
+}
+socket.on("user-login", async function (data) {
+    changeUserStatus(data.user_id, true, "")
+});
+socket.on("user-logout", function (data) {
+    changeUserStatus(data.user_id, false, dateFormat(new Date()))
+});
+
+
+function typing(receiver_id) {
+    socket.emit("typing", { receiver_id });
+}
+function stoptyping(receiver_id) {
+    socket.emit("stopTyping", { receiver_id });
+}
+
+socket.on("typing", function (data) {
+    $(`.person#person-${data.sender_id} .time`).text("Typing...")
+});
+socket.on("stopTyping", function (data) {
+    $(`.person#person-${data.sender_id} .time`).text("Online")
+});
+
+socket.on("message", function (data) {
+    my_name = data.user_name;
+    my_image = data.user_img;
+    my_id = data.user_id
+});
+socket.on("setReaded", function (data) {
+    setIconReadedHtml(data.sender_id);
+});
+/*
+remaining :
+start room chat
+audio and video chat
+*/
+

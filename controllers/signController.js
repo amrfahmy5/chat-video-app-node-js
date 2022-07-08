@@ -17,7 +17,7 @@ module.exports = {
         req.session.user_name = userData[0].name;
         req.session.user_img = userData[0].img_src;
 
-        res.redirect("/video") ;
+        res.redirect("/") ;
       }
     else
       res.redirect("/login") ;

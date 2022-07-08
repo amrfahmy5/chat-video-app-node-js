@@ -9,26 +9,31 @@ note for the two flag :
 الى هيا دى RTCSessionDescription
 تانى مرة ببتم الكول فعلاً بين الاتنين
 فالاتنين فلاج دول علشان يمنعو الانفينت لووب
+so -> answer-made , call-made run twice
 */
 
 let isAlreadyCalling = false;
-let getCalled = false ;
+let getCalled = false;
+let localStream;
 //RTCSessionDescription ----> have description of potential محتمل connection 
 const { RTCPeerConnection, RTCSessionDescription } = window;
 
-const peerConnection = new RTCPeerConnection();
+let peerConnection = new RTCPeerConnection();
 
 //sender
 // create offer and send to second user
-async function callUser(receiver_id) {
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
+function callUser(receiver_id) {
+    beReady().then(async (bool) => {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
 
-    socket.emit("call-user", {
-        offer,
-        receiver_id
-    });
+        socket.emit("call-user", {
+            offer,
+            receiver_id
+        });
+    })
 }
+
 //when second user accept call
 socket.on("answer-made", async data => {
     await peerConnection.setRemoteDescription(
@@ -36,9 +41,10 @@ socket.on("answer-made", async data => {
     );
 
     if (!isAlreadyCalling) {
-        console.log("hiiiiiiiiiiiii");
         callUser(data.receiver_id);
         isAlreadyCalling = true;
+        document.getElementById("page-chat").style.display = "none";
+        document.getElementById("page-video").style.display = "block";
     }
 });
 //when second user reject call
@@ -47,34 +53,38 @@ socket.on("call-rejected", data => {
 });
 
 //receiver
-// when another user send request to call and send accept answer to 2nd user
-socket.on("call-made", async data => {
-    // if (getCalled) { // to prevent confirm function run twice
+// receive request for call and can accept or reject call
+socket.on("call-made", data => {
+
+    if (getCalled) { // to prevent confirm function run twice
         const confirmed = confirm(
             `User "Socket: ${data.sender_name}" wants to call you. Do accept this call?`
         );
-
         if (!confirmed) {
             socket.emit("reject-call", {
                 sender_id: data.sender_id
             });
-
             return;
         }
-    // }
-
-    await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(data.offer)
-    );
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
-    socket.emit("make-answer", {
-        answer,
-        sender_id: data.sender_id
-    });
-    getCalled=true
-
-
+        else
+        {
+            document.getElementById("page-chat").style.display = "none";
+            document.getElementById("page-video").style.display = "block";
+        }
+    }
+    beReady().then(async (bool) => {
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(data.offer)
+        );
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
+        console.log("hi2");
+        socket.emit("make-answer", {
+            answer,
+            sender_id: data.sender_id
+        });
+        getCalled = true 
+    })
 });
 
 
@@ -87,17 +97,30 @@ peerConnection.ontrack = function ({ streams: [stream] }) {
     }
 };
 // 
-navigator.getUserMedia(
-    { video: true, audio: true },
-    stream => {
-        const localVideo = document.getElementById("local-video");
-        if (localVideo) {
+const localVideo = document.getElementById("local-video");
+function beReady() {
+    return navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true
+    })
+        .then(stream => {
             localVideo.srcObject = stream;
-        }
-        // add track here to use in peerConnection.ontrack
-        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    },
-    error => {
-        console.warn(error.message);
-    }
-);
+
+            localStream = stream; // to use in stop call
+            // add track here to use in peerConnection.ontrack
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            return true;
+        })
+        .catch(function (e) {
+            alert('getUserMedia() error: ' + e.name);
+        });
+}
+
+function stopCall() {
+    localStream.getTracks().forEach(track => track.stop());
+    peerConnection.close();
+    peerConnection = null;
+    document.getElementById("page-chat").style.display = "block";
+    document.getElementById("page-video").style.display = "none";
+
+}
