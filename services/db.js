@@ -6,7 +6,7 @@ const database = require("knex")({
     password: "",
     database: "chat",
   },
-  debug: true,
+  debug: false,
 });
 
 exports.database = database;

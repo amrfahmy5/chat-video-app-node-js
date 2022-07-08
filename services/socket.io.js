@@ -36,24 +36,24 @@ module.exports = {
       });
       socket.on("login", async function (data) {
         let { user_id, user_name, user_img } = sess;
-        if(!user_id) return ;
+        if (!user_id) return;
         mainModule.setOnline(user_id);
         users.push({ id: socket.id, user_id, user_name, img: user_img });
         socket.broadcast.emit("user-login", {
           user_id,
         });
         socket.send({
-          user_name, user_img ,user_id
+          user_name, user_img, user_id
         })
       });
       socket.on("typing", function (data) {
-        if(!sess.user_id) return ;
-        let {receiver_id} = data ;
+        if (!sess.user_id) return;
+        let { receiver_id } = data;
         const result = {
-          sender_id : sess.user_id ,
+          sender_id: sess.user_id,
         }
         if (receiver_id == "0")
-          socket.broadcast.emit("typing", result );
+          socket.broadcast.emit("typing", result);
         else {
           users.find(o => {
             if (o.user_id == receiver_id) {
@@ -63,14 +63,14 @@ module.exports = {
         }
       });
       socket.on("stopTyping", function (data) {
-        let {receiver_id} = data ;
-        if(!sess.user_id) return ;
+        let { receiver_id } = data;
+        if (!sess.user_id) return;
         const result = {
-          sender_id : sess.user_id ,
-          IsPublic:(receiver_id=="0")?true:false
+          sender_id: sess.user_id,
+          IsPublic: (receiver_id == "0") ? true : false
         }
         if (receiver_id == "0")
-          socket.broadcast.emit("stopTyping", result );
+          socket.broadcast.emit("stopTyping", result);
         else {
           users.find(o => {
             if (o.user_id == receiver_id) {
@@ -82,36 +82,71 @@ module.exports = {
       socket.on("send_message", function (data) {
         let receiver_id = data.receiver_id;
         let { user_id, user_name, user_img } = sess;
-        if(!user_id) return ;
+        if (!user_id) return;
         const result_date = {
           message_content: data.message_content,
           message_time: data.message_time,
           sender_id: user_id,
           sender_name: user_name,
           sender_img: user_img,
-          IsPublic:(receiver_id=="0")?true:false
+          IsPublic: (receiver_id == "0") ? true : false
         }
-        messageModule.saveMessage(user_id,receiver_id,data.message_content)
+        messageModule.saveMessage(user_id, receiver_id, data.message_content)
         if (receiver_id == "0")
           socket.broadcast.emit("receive_message", result_date);
         else {
           users.find(o => {
-            if (o.user_id == receiver_id) 
+            if (o.user_id == receiver_id)
               socket.to(o.id).emit("receive_message", result_date);
-            
+
           })
         }
 
       });
       socket.on("readMessage", async function (data) {
-        if(!sess.user_id) return ;
-        let {sender_id} = data ;
-        messageModule.setReaded(sender_id,sess.user_id);
+        if (!sess.user_id) return;
+        let { sender_id } = data;
+        messageModule.setReaded(sender_id, sess.user_id);
         users.find(o => {
-          if (o.user_id == sender_id) 
-            socket.to(o.id).emit("setReaded", {"sender_id":sess.user_id});          
+          if (o.user_id == sender_id)
+            socket.to(o.id).emit("setReaded", { "sender_id": sess.user_id });
         })
       });
+
+
+      socket.on("call-user", (data) => {
+        users.find(o => {
+          if (o.user_id == data.receiver_id)
+            socket.to(o.id).emit("call-made", {
+              offer: data.offer,
+              sender_id: sess.user_id,
+              sender_name: sess.user_name
+            });
+        })
+      });
+
+      socket.on("make-answer", data => {
+        users.find(o => {
+          if (o.user_id == data.sender_id){
+            socket.to(o.id).emit("answer-made", {
+              receiver_id: sess.user_id ,
+              answer: data.answer
+            });
+          }
+        })
+      });
+
+      socket.on("reject-call", data => {
+        users.find(o => {
+          if (o.user_id == data.sender_id)
+            socket.to(o.id).emit("call-rejected", {
+              receiver_id: sess.user_id,
+              receiver_name : sess.user_name
+            });
+        })
+      });
+
+
     });
   },
 };

@@ -9,5 +9,14 @@ module.exports = {
     };
     res.render("pages.chat", viewBag);
   },
+  async videoChat(req, res) {
+    const user_id  = req.session.user_id ;
+    const viewBag = {
+      title: "chat video",
+      // allUsers: await userModule.getAllUsersExpectMe(user_id) ,
+      user_id
+    };
+    res.render("pages.videoChat", viewBag);
+  },
 
 };
