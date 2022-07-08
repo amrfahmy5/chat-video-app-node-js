@@ -1,8 +1,9 @@
 //RTCSessionDescription ----> have description of potential محتمل connection 
 const { RTCPeerConnection, RTCSessionDescription } = window;
-
+const remoteVideo = document.getElementById("remote-video");
+const localVideo = document.getElementById("local-video");
 let receiver_id, peerConnection, otherUser, localStream;
-//sender
+//sender-------------------------------------------------------------------
 // create offer and send to second user
 function callUser(receiver_idTemp) {
     otherUser = receiver_idTemp;
@@ -17,7 +18,6 @@ function callUser(receiver_idTemp) {
         });
     })
 }
-
 //when second user accept call
 socket.on("answer-made", async data => {
     await peerConnection.setRemoteDescription(
@@ -31,7 +31,7 @@ socket.on("call-rejected", data => {
     alert(`User: "Socket: ${data.receiver_name}" rejected your call.`);
 });
 
-//receiver
+//receiver---------------------------------------------------------------
 // receive request for call and can accept or reject call
 socket.on("call-made", data => {
 
@@ -76,26 +76,8 @@ socket.on("call-made", data => {
 });
 
 
-// sender and receiver twice get this  and save the candidate of 2nd device
-socket.on('ICEcandidate', data => {
-    console.log("GOT ICE candidate");
 
-    let message = data.rtcMessage
-
-    let candidate = new RTCIceCandidate({
-        sdpMLineIndex: message.label,
-        candidate: message.candidate
-    });
-    if (peerConnection) {
-        console.log("ICE candidate Added");
-        peerConnection.addIceCandidate(candidate);
-    }
-
-})
-
-
-const remoteVideo = document.getElementById("remote-video");
-const localVideo = document.getElementById("local-video");
+// create peerConnection object
 function beReady() {
     return navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -109,10 +91,11 @@ function beReady() {
             return true;
         })
         .catch(function (e) {
-            alert('getUserMedia() error: ' + e.name);
+            alert("Please allow to Microphone and Video")
+            console.log('getUserMedia() error: ' + e.name);
+            // alert('getUserMedia() error: ' + e.name);
         });
 }
-
 function initializePeerConnectionObject() {
     try {
         peerConnection = new RTCPeerConnection();
@@ -120,25 +103,10 @@ function initializePeerConnectionObject() {
         peerConnection.onicecandidate = handleIceCandidate;
         peerConnection.onaddstream = handleRemoteStreamAdded;
         peerConnection.onremovestream = handleRemoteStreamRemoved; //not firing
-
-
-        // peerConnection.ontrack = function ({ streams: [stream] }) {
-        //     const remoteVideo = document.getElementById("remote-video");
-        //     if (remoteVideo) {
-        //         remoteVideo.srcObject = stream;
-        //     }
-        //not firing
-        //     stream.onremovetrack = ({ track }) => {
-        //         console.log(`${track.kind} track was removed.`);
-        //         if (!stream.getTracks().length) {
-        //             console.log(`stream ${stream.id} emptied (effectively removed).`);
-        //         }
-        //     };
-        // };
         return;
     } catch (e) {
         console.log('Failed to create PeerConnection, exception: ' + e.message);
-        alert('Cannot create RTCPeerConnection object.');
+        // alert('Cannot create RTCPeerConnection object.');
         return;
     }
 }
@@ -156,18 +124,31 @@ function handleIceCandidate(event) {
         console.log('End of candidates.');
     }
 }
-
 function handleRemoteStreamAdded(event) {
     console.log('Remote stream added.');
     remoteVideo.srcObject = event.stream;
 }
+function handleRemoteStreamRemoved(event) {
+    console.log('Remote stream removed. Event: ', event);
+    remoteVideo.srcObject = null;
+    localVideo.srcObject = null;
+}
+// sender and receiver twice get this  and save the candidate of 2nd device
+socket.on('ICEcandidate', data => {
+    console.log("GOT ICE candidate");
 
-// function handleRemoteStreamRemoved(event) {
-//     console.log('Remote stream removed. Event: ', event);
-//     alert("call ended")
-//     remoteVideo.srcObject = null;
-//     localVideo.srcObject = null;
-// }
+    let message = data.rtcMessage
+
+    let candidate = new RTCIceCandidate({
+        sdpMLineIndex: message.label,
+        candidate: message.candidate
+    });
+    if (peerConnection) {
+        console.log("ICE candidate Added");
+        peerConnection.addIceCandidate(candidate);
+    }
+
+})
 
 
 
