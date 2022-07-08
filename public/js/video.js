@@ -1,28 +1,12 @@
-/*
-note for the two flag :
-    first time send request to 2nd device to call and without know this about its rtcSession description
-    so first time is send only to get offer and get its candinate 
-    and run callUser function again with 2nd user description 
-    sor isAlreadyCalling to prevent infinit loop
-    get called to prevent two request of user to accept call
-اول مرة علشان اجيب بيانات اليوزر زى الايبى وكدة 
-الى هيا دى RTCSessionDescription
-تانى مرة ببتم الكول فعلاً بين الاتنين
-فالاتنين فلاج دول علشان يمنعو الانفينت لووب
-so -> answer-made , call-made run twice
-*/
-
-let isAlreadyCalling = false;
-let getCalled = false;
-let localStream;
 //RTCSessionDescription ----> have description of potential محتمل connection 
 const { RTCPeerConnection, RTCSessionDescription } = window;
 
-let peerConnection = new RTCPeerConnection();
-
+let receiver_id, peerConnection, otherUser, localStream;
 //sender
 // create offer and send to second user
-function callUser(receiver_id) {
+function callUser(receiver_idTemp) {
+    otherUser = receiver_idTemp;
+    receiver_id = receiver_idTemp;
     beReady().then(async (bool) => {
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
@@ -39,13 +23,8 @@ socket.on("answer-made", async data => {
     await peerConnection.setRemoteDescription(
         new RTCSessionDescription(data.answer)
     );
-
-    if (!isAlreadyCalling) {
-        callUser(data.receiver_id);
-        isAlreadyCalling = true;
-        document.getElementById("page-chat").style.display = "none";
-        document.getElementById("page-video").style.display = "block";
-    }
+    document.getElementById("page-chat").style.display = "none";
+    document.getElementById("page-video").style.display = "block";
 });
 //when second user reject call
 socket.on("call-rejected", data => {
@@ -56,21 +35,31 @@ socket.on("call-rejected", data => {
 // receive request for call and can accept or reject call
 socket.on("call-made", data => {
 
-    if (getCalled) { // to prevent confirm function run twice
-        const confirmed = confirm(
-            `User "Socket: ${data.sender_name}" wants to call you. Do accept this call?`
-        );
-        if (!confirmed) {
-            socket.emit("reject-call", {
+    const confirmed = confirm(
+        `User "Socket: ${data.sender_name}" wants to call you. Do accept this call?`
+    );
+    otherUser = data.sender_id;
+    if (!confirmed) {
+        socket.emit("reject-call", {
+            sender_id: data.sender_id
+        });
+        return;
+    }
+    else {
+        document.getElementById("page-chat").style.display = "none";
+        document.getElementById("page-video").style.display = "block";
+        beReady().then(async (bool) => {
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(data.offer)
+            );
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
+            socket.emit("make-answer", {
+                answer,
                 sender_id: data.sender_id
             });
-            return;
-        }
-        else
-        {
-            document.getElementById("page-chat").style.display = "none";
-            document.getElementById("page-video").style.display = "block";
-        }
+            getCalled = true
+        })
     }
     beReady().then(async (bool) => {
         await peerConnection.setRemoteDescription(
@@ -78,37 +67,45 @@ socket.on("call-made", data => {
         );
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
-        console.log("hi2");
         socket.emit("make-answer", {
             answer,
             sender_id: data.sender_id
         });
-        getCalled = true 
+        getCalled = true
     })
 });
 
 
+// sender and receiver twice get this  and save the candidate of 2nd device
+socket.on('ICEcandidate', data => {
+    console.log("GOT ICE candidate");
 
-// here how act with another user video to add to screen
-peerConnection.ontrack = function ({ streams: [stream] }) {
-    const remoteVideo = document.getElementById("remote-video");
-    if (remoteVideo) {
-        remoteVideo.srcObject = stream;
+    let message = data.rtcMessage
+
+    let candidate = new RTCIceCandidate({
+        sdpMLineIndex: message.label,
+        candidate: message.candidate
+    });
+    if (peerConnection) {
+        console.log("ICE candidate Added");
+        peerConnection.addIceCandidate(candidate);
     }
-};
-// 
+
+})
+
+
+const remoteVideo = document.getElementById("remote-video");
 const localVideo = document.getElementById("local-video");
 function beReady() {
     return navigator.mediaDevices.getUserMedia({
         audio: true,
         video: true
     })
-        .then(stream => {
+        .then(async stream => {
+            localStream = stream;
             localVideo.srcObject = stream;
-
-            localStream = stream; // to use in stop call
-            // add track here to use in peerConnection.ontrack
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            await initializePeerConnectionObject();
+            peerConnection.addStream(stream);
             return true;
         })
         .catch(function (e) {
@@ -116,7 +113,65 @@ function beReady() {
         });
 }
 
-function stopCall() {
+function initializePeerConnectionObject() {
+    try {
+        peerConnection = new RTCPeerConnection();
+        // to get  2nd user IceCandidate
+        peerConnection.onicecandidate = handleIceCandidate;
+        peerConnection.onaddstream = handleRemoteStreamAdded;
+        peerConnection.onremovestream = handleRemoteStreamRemoved; //not firing
+
+
+        // peerConnection.ontrack = function ({ streams: [stream] }) {
+        //     const remoteVideo = document.getElementById("remote-video");
+        //     if (remoteVideo) {
+        //         remoteVideo.srcObject = stream;
+        //     }
+        //not firing
+        //     stream.onremovetrack = ({ track }) => {
+        //         console.log(`${track.kind} track was removed.`);
+        //         if (!stream.getTracks().length) {
+        //             console.log(`stream ${stream.id} emptied (effectively removed).`);
+        //         }
+        //     };
+        // };
+        return;
+    } catch (e) {
+        console.log('Failed to create PeerConnection, exception: ' + e.message);
+        alert('Cannot create RTCPeerConnection object.');
+        return;
+    }
+}
+function handleIceCandidate(event) {
+    if (event.candidate) {
+        socket.emit("ICEcandidate", {
+            user: otherUser,
+            rtcMessage: {
+                label: event.candidate.sdpMLineIndex,
+                id: event.candidate.sdpMid,
+                candidate: event.candidate.candidate
+            }
+        })
+    } else {
+        console.log('End of candidates.');
+    }
+}
+
+function handleRemoteStreamAdded(event) {
+    console.log('Remote stream added.');
+    remoteVideo.srcObject = event.stream;
+}
+
+// function handleRemoteStreamRemoved(event) {
+//     console.log('Remote stream removed. Event: ', event);
+//     alert("call ended")
+//     remoteVideo.srcObject = null;
+//     localVideo.srcObject = null;
+// }
+
+
+
+function endCall() {
     localStream.getTracks().forEach(track => track.stop());
     peerConnection.close();
     peerConnection = null;

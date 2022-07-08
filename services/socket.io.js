@@ -127,9 +127,9 @@ module.exports = {
 
       socket.on("make-answer", data => {
         users.find(o => {
-          if (o.user_id == data.sender_id){
+          if (o.user_id == data.sender_id) {
             socket.to(o.id).emit("answer-made", {
-              receiver_id: sess.user_id ,
+              receiver_id: sess.user_id,
               answer: data.answer
             });
           }
@@ -141,10 +141,23 @@ module.exports = {
           if (o.user_id == data.sender_id)
             socket.to(o.id).emit("call-rejected", {
               receiver_id: sess.user_id,
-              receiver_name : sess.user_name
+              receiver_name: sess.user_name
             });
         })
       });
+      socket.on('ICEcandidate', (data) => {
+        let rtcMessage = data.rtcMessage;
+        users.find(o => {
+          if (o.user_id == data.user)
+            socket.to(o.id).emit("ICEcandidate", {
+              sender: sess.user_id,
+              rtcMessage: rtcMessage
+            })
+        })
+
+
+
+      })
 
 
     });
