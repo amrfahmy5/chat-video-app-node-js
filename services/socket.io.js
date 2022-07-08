@@ -14,7 +14,7 @@ module.exports = {
     io.listen(server);
     io.on("connection", (socket) => {
 
-      var sess = socket.handshake.session;
+      const sess = socket.handshake.session;
       socket.on("disconnect", async function (data) {
         let index = -1;
         users.find((o, i) => {
@@ -124,18 +124,15 @@ module.exports = {
             });
         })
       });
-
       socket.on("make-answer", data => {
         users.find(o => {
-          if (o.user_id == data.sender_id) {
+          if (o.user_id == data.sender_id)
             socket.to(o.id).emit("answer-made", {
               receiver_id: sess.user_id,
               answer: data.answer
             });
-          }
         })
       });
-
       socket.on("reject-call", data => {
         users.find(o => {
           if (o.user_id == data.sender_id)
@@ -154,10 +151,7 @@ module.exports = {
               rtcMessage: rtcMessage
             })
         })
-
-
-
-      })
+      });
 
 
     });

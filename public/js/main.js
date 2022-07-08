@@ -101,17 +101,18 @@ function showChatContainer(event, receiver_id, receiver_name, receiver_img) {
 }
 
 function getChatData(receiver_id, receiver_name, receiver_img) {
-  if($(`#chat-box-${receiver_id} li`).length!=0) return ;
+  if($(`#chat-box-${receiver_id} li`).length > 5) return ;
   $.get(`/getChat/${my_id}/${receiver_id}`, function (data, status) {
+    let messageHtml ;
     for (let i = 0; i < data.length; i++) {
       const message = data[i];
       if(message.isReaded)
       unreadMessage= true;
-      let messageHtml = (message.sender_id == my_id) ?
+      messageHtml += (message.sender_id == my_id) ?
         sendMessageHtml(my_name, my_image, message.message_content, new Date(),message.isReaded) :
         receiveMessageHtml(receiver_name, receiver_img, message.message_content, message.created_time);
-      $(`#chat-box-${receiver_id}`).append(messageHtml);
     }
+    $(`#chat-box-${receiver_id}`).html(messageHtml);
     scrollEndChat();
   });
 }

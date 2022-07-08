@@ -9,40 +9,40 @@ function callUser(receiver_idTemp) {
     otherUser = receiver_idTemp;
     receiver_id = receiver_idTemp;
     beReady().then(async (bool) => {
+
+        document.getElementById("page-chat").style.display = "none";
+        document.getElementById("page-video").style.display = "block";
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
-
         socket.emit("call-user", {
             offer,
             receiver_id
         });
-    })
+    }).catch()
 }
 //when second user accept call
 socket.on("answer-made", async data => {
     await peerConnection.setRemoteDescription(
         new RTCSessionDescription(data.answer)
     );
-    document.getElementById("page-chat").style.display = "none";
-    document.getElementById("page-video").style.display = "block";
 });
 //when second user reject call
 socket.on("call-rejected", data => {
     alert(`User: "Socket: ${data.receiver_name}" rejected your call.`);
+    endCall()
 });
 
 //receiver---------------------------------------------------------------
 // receive request for call and can accept or reject call
 socket.on("call-made", data => {
-
-    const confirmed = confirm(
-        `User "Socket: ${data.sender_name}" wants to call you. Do accept this call?`
-    );
     otherUser = data.sender_id;
-    if (!confirmed) {
+    if (!confirm(
+        `User "Socket: ${data.sender_name}" wants to call you. Do accept this call?`
+    )) {
         socket.emit("reject-call", {
             sender_id: data.sender_id
         });
+        endCall();
         return;
     }
     else {
@@ -61,18 +61,7 @@ socket.on("call-made", data => {
             getCalled = true
         })
     }
-    beReady().then(async (bool) => {
-        await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(data.offer)
-        );
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
-        socket.emit("make-answer", {
-            answer,
-            sender_id: data.sender_id
-        });
-        getCalled = true
-    })
+
 });
 
 
@@ -84,16 +73,18 @@ function beReady() {
         video: true
     })
         .then(async stream => {
+            console.log("assign to local stream 1");
             localStream = stream;
+            console.log("assign to local stream 2");
             localVideo.srcObject = stream;
-            await initializePeerConnectionObject();
-            peerConnection.addStream(stream);
+            await initializePeerConnectionObject()
+            peerConnection.addStream(localStream);
             return true;
         })
         .catch(function (e) {
-            alert("Please allow to Microphone and Video")
             console.log('getUserMedia() error: ' + e.name);
             // alert('getUserMedia() error: ' + e.name);
+            return false;
         });
 }
 function initializePeerConnectionObject() {
@@ -136,9 +127,7 @@ function handleRemoteStreamRemoved(event) {
 // sender and receiver twice get this  and save the candidate of 2nd device
 socket.on('ICEcandidate', data => {
     console.log("GOT ICE candidate");
-
     let message = data.rtcMessage
-
     let candidate = new RTCIceCandidate({
         sdpMLineIndex: message.label,
         candidate: message.candidate
@@ -147,16 +136,17 @@ socket.on('ICEcandidate', data => {
         console.log("ICE candidate Added");
         peerConnection.addIceCandidate(candidate);
     }
-
 })
 
-
-
 function endCall() {
-    localStream.getTracks().forEach(track => track.stop());
-    peerConnection.close();
+    console.log("end call");
+    if (localStream)
+        localStream.getTracks().forEach(track => track.stop());
+    if (peerConnection)
+        peerConnection.close();
     peerConnection = null;
     document.getElementById("page-chat").style.display = "block";
     document.getElementById("page-video").style.display = "none";
+    navigator.mediaDevices = null
 
 }
