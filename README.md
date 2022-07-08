@@ -1,4 +1,4 @@
-<h3> online chat with node js </h3>
+<h3> video chat with node js </h3>
 Socket.io + webRTC + mysql
 
 private and public chat <br>
